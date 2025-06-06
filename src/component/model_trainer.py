@@ -1,4 +1,5 @@
 import os 
+import sys
 import numpy as np
 import pandas as pd 
 from sklearn.svm import SVC
@@ -33,28 +34,29 @@ class ModelTrainer:
 
     def evaluate_model(self, x, y, models):
         try:
-            x_train, y_train, x_test, y_test = train_test_split()
+            x_train, x_test, y_train, y_test = train_test_split(x,y,test_size = 0.2,random_state=42)
             report = {}   
 
-            for i in (len(list(models))):
+            for i in range(len(list(models))):
                 model = list(models.values())[i]
                 model.fit(x_train, y_train)
                 y_train_predict = model.predict(x_train) 
                 y_test_predict = model.predict(x_test) 
-                test_model_score = accuracy_score(y_train, y_train_predict)
-                report[list(models.keys)[i]] = test_model_score
+                train_model_score = accuracy_score(y_train, y_train_predict)
+                test_model_score = accuracy_score(y_test, y_test_predict)
+                report[list(models.keys())[i]] = test_model_score
 
             return report
 
         except Exception as e:
-            raise customException(e) 
+            raise customException(e, sys) 
 
 
     def get_best_model(self,
-                       x_train = np.array,
-                       y_train = np.array,
-                       x_test = np.array,
-                       y_test = np.array
+                       x_train:np.array,
+                       y_train:np.array,
+                       x_test:np.array,
+                       y_test:np.array
                        ):
         try:
             model_report:dict = self.evaluate_model(
@@ -74,10 +76,10 @@ class ModelTrainer:
             return best_model_name, best_model_score, best_model_object
         
         except Exception as e:
-            raise customException(e)
+            raise customException(e, sys)
         
 
-    def finetune_model(self, 
+    def finetune_best_model(self, 
                        best_model_object:object,
                        best_model_name,
                        x_train,
@@ -99,23 +101,23 @@ class ModelTrainer:
             return finetuned_model
         
         except Exception as e:
-            raise customException(e)
+            raise customException(e,sys)
         
 
     def initiate_model_trainer(self, train_array, test_array):
         try:
-            logging.INFO("Spliting training and testing input and target feature")
+            logging.info("Spliting training and testing input and target feature")
 
             x_train, y_train, x_test, y_test = (
                 train_array[:,:-1],
-                train_array[:,:-1],
+                train_array[:,-1],
                 test_array[:,:-1],
-                test_array[:,:-1]
+                test_array[:,-1]
             )
             
-            logging.INFO("Extracting model config file path")
+            logging.info("Extracting model config file path")
 
-            model_report = self.evaluate_models(x = x_train, y = y_train, models = self.models)
+            model_report = self.evaluate_model(x = x_train, y = y_train, models = self.models)
 
             best_model_score = max(sorted(model_report.values()))
 
@@ -135,8 +137,8 @@ class ModelTrainer:
             if best_model_score < 0.5:
                 raise Exception("No best model found with an accuracy greater than the threshold 0.5")
             
-            logging.INFO("Best found model onn both training and testing datasets")
-            logging.INFO(f"Saving model at path: {self.model_trainer_config.trained_model_path}")
+            logging.info("Best found model onn both training and testing datasets")
+            logging.info(f"Saving model at path: {self.model_trainer_config.trained_model_path}")
 
             os.makedirs(os.path.dirname(self.model_trainer_config.trained_model_path), exist_ok = True)
             
@@ -145,4 +147,4 @@ class ModelTrainer:
             return self.model_trainer_config.trained_model_path
         
         except Exception as e :
-            raise customException(e)
+            raise customException(e,sys)

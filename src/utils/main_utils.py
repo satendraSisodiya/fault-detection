@@ -7,7 +7,7 @@ import yaml
 import boto3
 
 from src.constant import *
-from src.exception import CustomException
+from src.exception import customException
 from src.logger import logging
 
 
@@ -22,7 +22,7 @@ class MainUtils:
                 return yaml.safe_load(yaml_file)
 
         except Exception as e:
-            raise CustomException(e, sys) from e
+            raise customException(e, sys) from e
 
 
     def read_schema_config_file(self) -> dict:
@@ -32,7 +32,7 @@ class MainUtils:
             return schema_config
 
         except Exception as e:
-            raise CustomException(e, sys) from e
+            raise customException(e, sys) from e
 
 
     @staticmethod
@@ -46,7 +46,7 @@ class MainUtils:
             logging.info("Exited the save_object method of MainUtils class")
 
         except Exception as e:
-            raise CustomException(e, sys) from e
+            raise customException(e, sys) from e
 
 
     @staticmethod
@@ -62,7 +62,7 @@ class MainUtils:
             return obj
 
         except Exception as e:
-            raise CustomException(e, sys) from e
+            raise customException(e, sys) from e
 
 
     @staticmethod    
@@ -72,5 +72,5 @@ class MainUtils:
                 return pickle.load(file_obj)
         except Exception as e:
             logging.info('Exception Occured in load_object function utils')
-            raise CustomException(e,sys)
+            raise customException(e,sys)
    

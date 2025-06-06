@@ -1,8 +1,9 @@
 import os
+import sys
 import numpy as np
 import pandas as pd
 from zipfile import Path
-from logger import logging
+from src.logger import logging
 from src.constant import *
 from dataclasses import dataclass
 from src.exception import customException
@@ -38,7 +39,7 @@ class DataIngestion:
             return df        
         
         except Exception as e:
-            raise customException(e)
+            raise customException(e, sys)
         
     def export_data_into_feature_store_file_path(self) -> pd.DataFrame:
         try:
@@ -52,27 +53,28 @@ class DataIngestion:
                 collection_name = MONGO_COLLECTION_NAME
             )
 
-            logging.INFO(f"saving exported data into feature_store_file_path:{raw_file_path}")
+            logging.info(f"saving exported data into feature_store_file_path:{raw_file_path}")
             feature_store_file_path = os.path.join(raw_file_path, "waffer-fault.csv")
             
             # dataframe (sensor_data) export to a csv file (feature_store_file_path)
-            sensor_data.to_csv(feature_store_file_path, index = True)
+            sensor_data.to_csv(feature_store_file_path, index = False)
 
             return feature_store_file_path
 
         except Exception as e:
-            raise customException(e)        
+            raise customException(e, sys)        
         
 
-    def intiate_data_ingestion(self) -> Path :
+    def initiate_data_ingestion(self) -> Path :
         
-        logging.INFO(f"Entered intiated_data_ingestion method of data_ingestion class")
+        logging.info(f"Entered intiated_data_ingestion method of data_ingestion class")
 
         try:
             feature_store_file_path = self.export_data_into_feature_store_file_path()
 
-            logging.INFO("got the data from mongoDB")
-            logging.INFO("exited intiated_data_ingestion method of data_ingestion class")    
+            logging.info("got the data from mongoDB")
+            logging.info("exited intiated_data_ingestion method of data_ingestion class") 
+            return feature_store_file_path   
         
         except Exception as e:
-            raise customException(e)
+            raise customException(e, sys)

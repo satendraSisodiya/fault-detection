@@ -1,4 +1,5 @@
-import os 
+import os
+import sys 
 import pandas as pd
 import numpy as np
 from src.constant import *
@@ -23,29 +24,30 @@ class DataTransformation:
     def __init__(self, feature_store_file_path):
         self.feature_store_file_path = feature_store_file_path
         self.data_transformation_config = DataTransformationConfig()
-        self.utils = MainUtils
+        self.utils = MainUtils()
 
     def get_data(self, feature_store_file_path:str) -> pd.DataFrame:
         
         try:
             data = pd.read_csv(feature_store_file_path)
-
-            data.rename(columns = {"good/bad" : "TARGET_COLUMN"}, imnplace = True)
+            print("[DEBUG] Columns before rename:", data.columns.tolist())
+            data.rename(columns = {"Good/Bad" : TARGET_COLUMN}, inplace = True)
+            print("[DEBUG] Columns after rename:", data.columns.tolist())  
 
             return data
         
         except Exception as e:
-            raise customException(e)
+            raise customException(e, sys)
 
       
     def get_data_transformer_object(self):
         try:
             imputer_step = ("imputer", SimpleImputer(strategy="constant", fill_value=0))
             
-            scaler_step= ("scaler", RobustScaler)
+            scaler_step= ("scaler", RobustScaler())
 
             preprocessor = Pipeline(
-                step = [
+                steps = [
                     imputer_step,
                     scaler_step
                 ]
@@ -54,10 +56,10 @@ class DataTransformation:
             return preprocessor
         
         except Exception as e:
-            raise customException(e)
+            raise customException(e, sys)
 
     def intiate_data_transformation(self):
-        logging.INFO("Entering intiate_data_transformation method of data_transformation class")
+        logging.info("Entering intiate_data_transformation method of data_transformation class")
 
         try:
             df = self.get_data(feature_store_file_path = self.feature_store_file_path)
@@ -66,7 +68,7 @@ class DataTransformation:
               
             y = np.where(df[TARGET_COLUMN] == -1,0,1)
 
-            x_train, y_train, x_test, y_test = train_test_split(x, y, test_size=0.2)
+            x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2)
 
             preprocessor = self.get_data_transformer_object()
 
@@ -82,10 +84,10 @@ class DataTransformation:
 
             train_arr = np.c_[x_train_scaled, np.array(y_train)]
 
-            test_arr = np.c_[x_test_scaled, np.rray(y_test)]
+            test_arr = np.c_[x_test_scaled, np.array(y_test)]
             
             return (train_arr, test_arr, preprocessor_path)
 
 
         except Exception as e:
-            raise customException(e)
+            raise customException(e, sys)
