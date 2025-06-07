@@ -1,0 +1,134 @@
+# Sensor Fault Detection Project Deployment
+
+To deploy our project to Aws Ec2 we have some steps which are following:
+
+- Create DockerFile and test by building docker image locally.
+- Create Github Actions YAML config file
+- Set up github repository secrets 
+- Create an AWS EC2 ubuntu machine 
+- Install docker and AWS cli in ec2 machine
+- Set up self-hosted runner in EC2 
+- Create an ECR repository in aws 
+
+
+
+ 
+# ![Docker](https://skillicons.dev/icons?i=docker) Create DockerFile and test by building docker image locally.
+
+- Let's check our DockerFile that we've created for our project.
+```docker
+FROM python:3.8-slim-buster
+
+WORKDIR /app
+
+COPY . /app
+
+RUN pip install -r requirements.txt
+
+CMD [ "python3","app.py" ]
+
+```
+So our base image is `python:3.8-slim-buster` and our work directory is `app.py` as this is the module where our FastApi app code is written. We are installing the requirements from the requirements.txt and atlast we are giving a command to run the app. That's all about the dockerfile that we have created for this particular project.
+
+## Create Github Actions YAML config file
+
+### Continuous Integration and Continuous Deployment Workflow
+
+```YAMl
+
+name: workflow
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'README.md'
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  integration:
+    name: Continuous Integration
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Lint code
+        run: echo "Linting repository"
+
+      - name: Run unit tests
+        run: echo "Running unit tests"
+
+  build-and-push-ecr-image:
+    name: Continuous Delivery
+    needs: integration
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Install Utilities
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq unzip
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        env:
+          IMAGE_TAG: latest
+        run: |
+          # Build a docker container and
+          # push it to ECR so that it can
+          # be deployed to ECS.
+          docker build -t ${{ secrets.AWS_ECR_REPO_URI }}:$IMAGE_TAG .
+          docker push ${{ secrets.AWS_ECR_REPO_URI }}:$IMAGE_TAG
+          
+          
+  Continuous-Deployment:
+    needs: build-and-push-ecr-image
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+      
+      
+      - name: Pull latest images
+        run: |
+         docker pull ${{ secrets.AWS_ECR_REPO_URI }}:latest
+         
+                
+      # - name: Stop and remove visibility container if running
+      #   run: |
+      #    docker ps -q --filter "name=visibility" | grep -q . && docker stop visibility && docker rm -fv visibility
+      - name: Run Docker Image to serve users
+        run: |
+         docker run -d -p 8080:8080 --name=sensor -e 'MONGO_DB_URL=${{ secrets.MONGO_DB_URL }}' -e 'AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}' -e 'AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}' -e 'AWS_DEFAULT_REGION=${{ secrets.AWS_DEFAULT_REGION }}' ${{ secrets.AWS_ECR_REPO_URI }}:latest
+
+      - name: Clean previous images and containers
+        run: |
+         docker system prune -f
