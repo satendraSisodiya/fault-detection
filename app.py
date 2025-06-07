@@ -8,10 +8,12 @@ from flask import Flask, render_template, jsonify, request, send_file
 
 app = Flask(__name__)
 
+training_completed = False
 
 @app.route("/")
 def home():
-    return "Welcome to my application"
+    global training_completed
+    return render_template("home.html", training_done=training_completed)
 
 
 @app.route("/train")
@@ -19,8 +21,8 @@ def train_route():
     try:
         train_pipeline = TrainingPipeline()
         train_pipeline.run_pipeline()
-
-        return "Training Completed."
+        training_completed = True  # Update flag after successful training
+        return render_template("home.html", training_done=True)
 
     except Exception as e:
         raise customException(e,sys)
