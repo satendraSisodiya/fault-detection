@@ -83,10 +83,7 @@ jobs:
       - name: Pull latest images
         run: |
          docker pull ${{ secrets.AWS_ECR_REPO_URI }}:latest
-         
-      - name: Remove existing container if any
-        run: |
-          docker rm -f sensor || true          
+  
       # - name: Stop and remove visibility container if running
       #   run: |
       #    docker ps -q --filter "name=visibility" | grep -q . && docker stop visibility && docker rm -fv visibility
